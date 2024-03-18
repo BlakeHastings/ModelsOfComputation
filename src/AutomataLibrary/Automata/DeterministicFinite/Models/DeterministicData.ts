@@ -1,6 +1,4 @@
-
-
-import { State } from "../../Common/Models/State";
+import { State } from "../../../Common/Models/State";
 
 export interface DeterministicData {
     states: State[];

@@ -7,7 +7,7 @@
     δ = transition function
 */
 
-import { State } from "../../Common/Models/State";
+import { State } from "../../../Common/Models/State";
 
 export interface DeterministicFormalDef {
     /** 

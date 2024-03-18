@@ -1,5 +1,5 @@
-import { DeterministicData } from "./DeterministicData";
-import { DeterministicFormalDef } from "./DeterministicFormalDef";
+import { DeterministicData } from "../Models/DeterministicData";
+import { DeterministicFormalDef } from "../Models/DeterministicFormalDef";
 
 export function DataToFormal(data: DeterministicData): DeterministicFormalDef {
     let initialState = data.states.find(x => x.isStartState);

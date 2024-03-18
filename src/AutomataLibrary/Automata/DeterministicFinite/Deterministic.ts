@@ -1,10 +1,10 @@
 import { State } from "../../Common/Models/State";
 import { Transition } from "../../Common/Models/Transition";
-import { DataToFormal } from "./DataToFormal";
-import { DeterministicData } from "./DeterministicData";
-import { DeterministicFormalDef } from "./DeterministicFormalDef";
+import { DataToFormal } from "./Mappers/DataToFormal";
+import { DeterministicData } from "./Models/DeterministicData";
+import { DeterministicFormalDef } from "./Models/DeterministicFormalDef";
 
-export class Deterministic {
+export default class Deterministic {
 
     private currState: State;
     private formalDefinition: DeterministicFormalDef;
