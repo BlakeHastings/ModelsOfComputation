@@ -2,6 +2,10 @@ import * as THREE from "three";
 import { State } from "../AutomataLibrary/Common/Models/State";
 import { CSS2DObject, CSS3DObject } from "three/examples/jsm/Addons.js";
 import { degToRad } from "three/src/math/MathUtils.js";
+import "./Extensions/Extensions";
+import { SceneObject } from "./SceneObjects/SceneObject";
+import { StateObject } from "./SceneObjects/StateObject";
+import System from 'three-nebula-types';
 
 export class StateGrapherScene extends THREE.Scene {
 
@@ -9,11 +13,12 @@ export class StateGrapherScene extends THREE.Scene {
     private circle!: THREE.Mesh;
     private camera: THREE.Camera;
     private canvas: HTMLElement;
-    private stateColor = new THREE.MeshBasicMaterial({ color: 0xFFFFFF });
-    private stateCircles: THREE.Mesh[] = [];
-    private stateLabels: CSS3DObject[] = [];
+
+    private stateCircles: StateObject[] = [];
+    private sceneObjects: SceneObject[] = [];
 
     private transitionLineMaterial = new THREE.LineBasicMaterial( { color: 0x000000 } );
+    private particleSystem = new System();
 
     RADIUS = 10;
 
@@ -30,41 +35,37 @@ export class StateGrapherScene extends THREE.Scene {
         this.states.forEach(state => {
             this.createState(state);
         });
+
         this.positionStates(this.states, this.canvas);
-        this.createTransitions(this.states[0]);
+        
+        // this.states.forEach(state => {
+        //     this.createTransitions(state);
+        // })
+        
         this.background = new THREE.Color(0xDDDDDD);
+
+        this.sceneObjects.forEach(x => {
+            x.initialize();
+            this.add(x); 
+        });
     }
 
     private createState(state: State) {
-        const geometry = new THREE.CircleGeometry(this.RADIUS);
-        const stateCircle = new THREE.Mesh(geometry, this.stateColor);
-        stateCircle.name = "state_" + state.id;
-        stateCircle.userData.type = "state";
-        this.add(stateCircle);
-        
-        // create label
-        const stateDiv = document.createElement('div');
-        stateDiv.className = "label";
-        stateDiv.textContent = state.id;
-        stateDiv.style.backgroundColor = 'transparent';
+        var object = new StateObject(state.id);
+        this.sceneObjects.push(object);
+        this.stateCircles.push(object);
 
-        const stateLabel = new CSS3DObject(stateDiv);
-        //stateLabel.position.set(5 / 2, 5 / 2, 0);
-        stateCircle.add(stateLabel);
-        stateLabel.layers.set(0);
-        this.stateLabels.push(stateLabel);
+        this.particleSystem.addEmitter()
     }
 
     private positionStates(states: State[], canvas : HTMLElement) {
-        var stateCircles = this.children.filter(x => x.userData.type = "state");
-
         var width = canvas.offsetWidth;
         var height = canvas.offsetHeight
         var PADDING = 5; 
 
-        var spaceForEachNode = (width / stateCircles.length + this.RADIUS * 2) / 5;
-        for (let i = 0; i < stateCircles.length; i++) {
-           stateCircles[i].position.x += spaceForEachNode * i;
+        var spaceForEachNode = (width / this.stateCircles.length + this.RADIUS * 2) / 5;
+        for (let i = 0; i < this.stateCircles.length; i++) {
+           this.stateCircles[i].position.x += spaceForEachNode * i;
         }
     }
 
@@ -77,23 +78,38 @@ export class StateGrapherScene extends THREE.Scene {
             var endCircle = this.getObjectByName("state_" + transition.endingStateId);
             if (!endCircle) {console.error("state_" + transition.endingStateId + " does not exist")}
             
-            var transitionGeometry = new THREE.BufferGeometry().setFromPoints( [startCircle!.position, endCircle!.position])
-            this.add(new THREE.Line(transitionGeometry, this.transitionLineMaterial));
+            var linePoints = [
+                startCircle!.position.clone().add(new THREE.Vector3(this.RADIUS)),
+                endCircle!.position.clone().sub(new THREE.Vector3(this.RADIUS)),
+            ];
+
+            // handle self loop 
+            if (startCircle?.name == endCircle?.name) {
+                linePoints.splice(1, 0, startCircle!.position.clone().add(new THREE.Vector3(0,this.RADIUS*2)));
+            }
+
+            var transitionGeometry = new THREE.BufferGeometry().setFromPoints(linePoints);
+            var line = new THREE.Line(transitionGeometry, this.transitionLineMaterial);
+            this.add(line);
+
+             // create label
+             const labelDiv = document.createElement('div');
+             labelDiv.className = "label";
+             labelDiv.textContent = transition.parameters.toString();
+             labelDiv.style.backgroundColor = 'transparent';
+ 
+             const label = new CSS3DObject(labelDiv);
+             label.position.set((linePoints.first().x + linePoints.last().x) / 2, linePoints.middle().y + 5, 0);
+             line.add(label);
+             label.layers.set(0);  
         });
         
-    }
+    } 
 
     update() {
-        // this.stateLabels.forEach(label => {
-        //     if (!label.parent) {
-        //         return;
-        //     }
-        //     var scaleVector = new THREE.Vector3();
-        //     var scaleFactor = 4;
-        //     var sprite = label;
-        //     var scale = scaleVector.subVectors(label.parent.position, this.camera.position).length() / scaleFactor;
-        //     sprite.scale.set(scale, scale, 1); 
-        // });
+        this.sceneObjects.forEach(x => x.update());
+        
+        
        
     }
 
